@@ -20,7 +20,7 @@ $ os-flavor-selector --vcpus-min 4 --vcpus-max 8
 $ os-flavor-selector --vcpus-min 4 --vcpus-max 8 --output json
 $ os-flavor-selector --vcpus-min 4 --memory-max 16 --output text
 ```
-![interactive](img/interactive.png)
+![Interactive GIF](img/demo.gif)
 
 # Installation
 ```bash
