@@ -10,7 +10,7 @@ authors = [
 ]
 
 [project.scripts]
-os-flavor-selector = "os_flavor_selector.os_flavor_selector:main"
+os-flavor-selector = "os_flavor_selector.main:main"
 
 [project.urls]
 "Homepage" = "https://github.com/thobiast/openstack-flavor-selector"

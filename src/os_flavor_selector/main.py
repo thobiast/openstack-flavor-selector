@@ -194,8 +194,8 @@ def main():
     flavors.filter_name = args_parsed.name
 
     if args_parsed.output == "json":
-        for flavor in flavors.list_flavors:
-            print(json.dumps(vars(flavor)))
+        list_of_dicts = [asdict(f) for f in flavors.list_flavors]
+        print(json.dumps(list_of_dicts))
     elif args_parsed.output == "text":
         for flavor in flavors.list_flavors:
             print(asdict(flavor))
