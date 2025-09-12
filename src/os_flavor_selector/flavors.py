@@ -35,14 +35,16 @@ class Flavors:
     def __init__(self, *, all_flavor_list, cli_args=None):
         self._all_flavors = all_flavor_list
 
+        self.filter_name = getattr(cli_args, "name", None)
         self.vcpus_min = getattr(cli_args, "vcpus_min", None)
         self.vcpus_max = getattr(cli_args, "vcpus_max", None)
         self.mem_min = getattr(cli_args, "memory_min", None)
         self.mem_max = getattr(cli_args, "memory_max", None)
-        self.filter_name = getattr(cli_args, "name", None)
+        self.visibility = getattr(cli_args, "visibility", None)
 
     def get_filtered_flavors(self):
         filtered_list = self._all_flavors
+
         if self.filter_name:
             filtered_list = [f for f in filtered_list if self.filter_name in f.name]
         if self.vcpus_min is not None:
@@ -53,6 +55,11 @@ class Flavors:
             filtered_list = [f for f in filtered_list if f.memory >= self.mem_min]
         if self.mem_max is not None:
             filtered_list = [f for f in filtered_list if f.memory <= self.mem_max]
+
+        if self.visibility == "public":
+            filtered_list = [f for f in filtered_list if f.is_public]
+        elif self.visibility == "private":
+            filtered_list = [f for f in filtered_list if not f.is_public]
 
         return filtered_list
 

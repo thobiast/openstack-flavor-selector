@@ -15,6 +15,38 @@ from rich.table import Table
 from .flavors import Flavors, get_all_flavors_list, get_openstack_connection
 from .utils import setup_logging
 
+RICH_TABLE_COLUMNS_BASIC = [
+    {"header": "ID", "attr": "flavor_id", "style": "green", "no_wrap": True},
+    {"header": "Name", "attr": "name", "style": "magenta", "no_wrap": True},
+    {"header": "VCPUs", "attr": "vcpus", "style": "cyan", "justify": "right"},
+    {"header": "Mem (GiB)", "attr": "memory", "style": "cyan", "justify": "right"},
+    {"header": "Disk", "attr": "disk", "style": "cyan", "justify": "right"},
+    {"header": "Swap", "attr": "swap", "style": "cyan", "justify": "right"},
+    {"header": "Ephemeral", "attr": "ephemeral", "style": "cyan", "justify": "right"},
+    {"header": "Is_public", "attr": "is_public", "style": "cyan", "justify": "right"},
+]
+
+RICH_TABLE_COLUMNS_EXTRA = [
+    {
+        "header": "Description",
+        "attr": "description",
+        "style": "cyan",
+        "justify": "right",
+    },
+    {
+        "header": "rxtx_factor",
+        "attr": "rxtx_factor",
+        "style": "cyan",
+        "justify": "right",
+    },
+    {
+        "header": "extra_specs",
+        "attr": "extra_specs",
+        "style": "cyan",
+        "justify": "right",
+    },
+]
+
 
 ##############################################################################
 # Parses the command line
@@ -52,6 +84,12 @@ def cli_args():
         choices=["interactive", "text", "json"],
         help="Output format (default: %(default)s)",
     )
+    parser.add_argument(
+        "--visibility",
+        default="all",
+        choices=["all", "public", "private"],
+        help="Filter by flavor visibility (default: %(default)s)",
+    )
     parser.add_argument("--memory-min", type=int, help="Minimum Amount of Memory")
     parser.add_argument("--memory-max", type=int, help="Maximum Amount of Memory")
     parser.add_argument("--vcpus-min", type=int, help="Minimum Amount of VCPUs")
@@ -65,40 +103,28 @@ def cli_args():
 # Return Rich table
 #############################################################################
 def create_table(*, flavors, long, sort_column, sort_order):
-    logging.debug("long: %s sort_column: %s sort_order: %s", long, sort_column, sort_order)
+    logging.debug(
+        "long: %s sort_column: %s sort_order: %s", long, sort_column, sort_order
+    )
 
     table = Table(title="OpenStack Flavors", show_edge=False)
 
-    table.add_column("ID", style="green", no_wrap=True)
-    table.add_column("Name", style="magenta", no_wrap=True)
-    table.add_column("VCPUs", justify="right", style="cyan")
-    table.add_column("Mem (GiB)", justify="right", style="cyan")
-    table.add_column("Disk", justify="right", style="cyan")
-    table.add_column("Swap", justify="right", style="cyan")
-    table.add_column("Ephemeral", justify="right", style="cyan")
-    table.add_column("Is_public", justify="right", style="cyan")
+    table_cols = RICH_TABLE_COLUMNS_BASIC
     if long:
-        table.add_column("Description", justify="right", style="cyan")
-        table.add_column("rxtx_factor", justify="right", style="cyan")
-        table.add_column("extra_specs", justify="right", style="cyan")
+        table_cols = RICH_TABLE_COLUMNS_BASIC + RICH_TABLE_COLUMNS_EXTRA
 
-    for flavor in flavors.sort_flavors(sort_column, sort_order):
-        row = [
-            flavor.flavor_id,
-            flavor.name,
-            str(flavor.vcpus),
-            str(flavor.memory),
-            str(flavor.disk),
-            str(flavor.swap),
-            str(flavor.ephemeral),
-            str(flavor.is_public),
-        ]
-        if long:
-            row.extend(
-                [flavor.description, str(flavor.rxtx_factor), str(flavor.extra_specs)]
-            )
-        table.add_row(*row)
+    for col in table_cols:
+        table.add_column(
+            col["header"],
+            style=col["style"],
+            justify=col.get("justify"),
+            no_wrap=col.get("no_wrap"),
+        )
 
+    sorted_flavors = flavors.sort_flavors(sort_column, sort_order)
+    for flavor in sorted_flavors:
+        row_data = [str(getattr(flavor, col["attr"])) for col in table_cols]
+        table.add_row(*row_data)
     return table
 
 
@@ -107,8 +133,31 @@ def create_table(*, flavors, long, sort_column, sort_order):
 # Return None if number is less than 1
 #############################################################################
 def ask_user_int(message):
-    user_number = IntPrompt.ask(message)
+    user_number = IntPrompt.ask(message, default=0)
     return user_number if user_number > 0 else None
+
+
+#############################################################################
+# Helper function to change prompt and change filter criteria
+#############################################################################
+def handle_filter_prompt(flavors):
+    filter_type = Prompt.ask(
+        "Choose filter [bold]N[/]ame, V[bold]C[/]PUs, "
+        "[bold]M[/]emory or [bold]V[/]isibility",
+        choices=["n", "c", "m", "v"],
+    )
+    if filter_type == "n":
+        flavors.filter_name = Prompt.ask("Enter name to filter")
+    if filter_type == "c":
+        flavors.vcpus_min = ask_user_int("Enter VCPUs Minimum (0 to reset)")
+        flavors.vcpus_max = ask_user_int("Enter VCPUs Maximum (0 to reset)")
+    if filter_type == "m":
+        flavors.mem_min = ask_user_int("Enter Memory Minimum (0 to reset)")
+        flavors.mem_max = ask_user_int("Enter Memory Maximum (0 to reset)")
+    if filter_type == "v":
+        flavors.visibility = Prompt.ask(
+            "Choose visibility", choices=["all", "public", "private"], default="all"
+        )
 
 
 #############################################################################
@@ -123,7 +172,7 @@ def interactive(flavors):
     console = Console()
     long = False
     user_option = None
-    while user_option != "q":
+    while True:
         if logging.getLogger().getEffectiveLevel() != logging.DEBUG:
             console.clear()
 
@@ -139,7 +188,8 @@ def interactive(flavors):
             f"[red]Filtering flavors ("
             f"name:[bold magenta]{flavors.filter_name}[/]/"
             f"VCPUs:[bold magenta]{flavors.vcpus_min}-{flavors.vcpus_max}[/]/"
-            f"Mem:[bold magenta]{flavors.mem_min}-{flavors.mem_max}[/])  "
+            f"Mem:[bold magenta]{flavors.mem_min}-{flavors.mem_max}[/]/"
+            f"Visibility:[bold magenta]{flavors.visibility}[/])  "
             f"[red]Sorting by:[bold magenta]{sort_column_map[sort_by_column]}[/]  "
             f"[red]Sort order:[bold magenta]{sort_order}[/]  "
             f"[red]Show all details:[bold magenta]{long}[/]",
@@ -157,19 +207,10 @@ def interactive(flavors):
         user_option = Prompt.ask(
             "Choose the option:", choices=["1", "2", "3", "f", "o", "d", "q"]
         )
+        if user_option == "q":
+            break
         if user_option == "f":
-            filter_type = Prompt.ask(
-                "Choose filter [bold]N[/]ame, V[bold]C[/]PUs or [bold]M[/]emory",
-                choices=["n", "c", "m"],
-            )
-            if filter_type == "n":
-                flavors.filter_name = Prompt.ask("Enter name to filter")
-            if filter_type == "c":
-                flavors.vcpus_min = ask_user_int("Enter VCPUs Minimum (0 to reset)")
-                flavors.vcpus_max = ask_user_int("Enter VCPUs Maximum (0 to reset)")
-            if filter_type == "m":
-                flavors.mem_min = ask_user_int("Enter Memory Minimum (0 to reset)")
-                flavors.mem_max = ask_user_int("Enter Memory Maximum (0 to reset)")
+            handle_filter_prompt(flavors)
         elif user_option == "o":
             sort_order = "asc" if sort_order == "desc" else "desc"
         elif user_option == "d":
