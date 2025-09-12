@@ -15,8 +15,6 @@ from rich.table import Table
 from .flavors import Flavors, get_all_flavors_list, get_openstack_connection
 from .utils import setup_logging
 
-LOG = setup_logging()
-
 
 ##############################################################################
 # Parses the command line
@@ -67,7 +65,7 @@ def cli_args():
 # Return Rich table
 #############################################################################
 def create_table(*, flavors, long, sort_column, sort_order):
-    LOG.debug("long: %s sort_column: %s sort_order: %s", long, sort_column, sort_order)
+    logging.debug("long: %s sort_column: %s sort_order: %s", long, sort_column, sort_order)
 
     table = Table(title="OpenStack Flavors", show_edge=False)
 
@@ -126,7 +124,7 @@ def interactive(flavors):
     long = False
     user_option = None
     while user_option != "q":
-        if not LOG.isEnabledFor(logging.DEBUG):
+        if logging.getLogger().getEffectiveLevel() != logging.DEBUG:
             console.clear()
 
         table = create_table(
@@ -187,9 +185,9 @@ def main():
 
     args = cli_args()
 
-    # enable debug
-    if not args.debug:
-        logging.disable()
+    log_level = logging.DEBUG if args.debug else logging.WARNING
+    setup_logging(log_level)
+    logging.debug("CMD line args: %s", args)
 
     os_conn = get_openstack_connection(args.os_cloud)
 

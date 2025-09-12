@@ -7,8 +7,6 @@ from dataclasses import dataclass
 
 import openstack
 
-LOG = logging.getLogger(__name__)
-
 
 # pylint: disable=too-many-instance-attributes
 @dataclass(order=True, frozen=True)
@@ -81,7 +79,7 @@ def get_openstack_connection(os_cloud):
 # Return a list withi with all flavors
 ##############################################################################
 def get_all_flavors_list(os_conn):
-    LOG.debug("getting flavors")
+    logging.debug("getting flavors")
 
     flavor_list = []
     for os_flavor in os_conn.compute.flavors():
