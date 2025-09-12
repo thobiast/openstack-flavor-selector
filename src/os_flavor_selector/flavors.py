@@ -3,6 +3,7 @@
 
 import logging
 import operator
+import re
 from dataclasses import dataclass
 
 import openstack
@@ -46,7 +47,11 @@ class Flavors:
         filtered_list = self._all_flavors
 
         if self.filter_name:
-            filtered_list = [f for f in filtered_list if self.filter_name in f.name]
+            filtered_list = [
+                f
+                for f in filtered_list
+                if re.search(self.filter_name, f.name, flags=re.IGNORECASE)
+            ]
         if self.vcpus_min is not None:
             filtered_list = [f for f in filtered_list if f.vcpus >= self.vcpus_min]
         if self.vcpus_max is not None:

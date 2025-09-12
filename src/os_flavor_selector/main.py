@@ -94,7 +94,9 @@ def cli_args():
     parser.add_argument("--memory-max", type=int, help="Maximum Amount of Memory")
     parser.add_argument("--vcpus-min", type=int, help="Minimum Amount of VCPUs")
     parser.add_argument("--vcpus-max", type=int, help="Maximum Amount of VCPUs")
-    parser.add_argument("--name", help="Filter by name")
+    parser.add_argument(
+        "--name", help="Filter by name using a regular expression (case-insensitive)"
+    )
 
     return parser.parse_args()
 
