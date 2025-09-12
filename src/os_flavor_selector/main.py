@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.prompt import IntPrompt, Prompt
 from rich.table import Table
 
-from .flavors import get_flavors, get_openstack_connection
+from .flavors import Flavors, get_all_flavors_list, get_openstack_connection
 from .utils import setup_logging
 
 LOG = setup_logging()
@@ -192,14 +192,10 @@ def main():
         logging.disable()
 
     os_conn = get_openstack_connection(args.os_cloud)
-    flavors = get_flavors(os_conn)
 
-    # Configure flavors with cli filter parameters
-    flavors.vcpus_min = args.vcpus_min
-    flavors.vcpus_max = args.vcpus_max
-    flavors.mem_min = args.memory_min
-    flavors.mem_max = args.memory_max
-    flavors.filter_name = args.name
+    all_flavors_list = get_all_flavors_list(os_conn)
+
+    flavors = Flavors(all_flavor_list=all_flavors_list, cli_args=args)
 
     if args.output == "json":
         list_of_dicts = [asdict(f) for f in flavors.list_flavors]

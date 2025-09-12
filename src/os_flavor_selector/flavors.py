@@ -34,22 +34,14 @@ class Flavor:
 class Flavors:
     """Class to filter and sort flavors."""
 
-    def __init__(
-        self,
-        *,
-        filter_name=None,
-        vcpus_min=None,
-        vcpus_max=None,
-        mem_min=None,
-        mem_max=None,
-        all_flavor_list=None,
-    ):
-        self.vcpus_min = vcpus_min
-        self.vcpus_max = vcpus_max
-        self.mem_min = mem_min
-        self.mem_max = mem_max
-        self.filter_name = filter_name
+    def __init__(self, *, all_flavor_list, cli_args=None):
         self._all_flavors = all_flavor_list
+
+        self.vcpus_min = getattr(cli_args, "vcpus_min", None)
+        self.vcpus_max = getattr(cli_args, "vcpus_max", None)
+        self.mem_min = getattr(cli_args, "memory_min", None)
+        self.mem_max = getattr(cli_args, "memory_max", None)
+        self.filter_name = getattr(cli_args, "name", None)
 
     def get_filtered_flavors(self):
         filtered_list = self._all_flavors
@@ -86,29 +78,29 @@ def get_openstack_connection(os_cloud):
 
 
 ##############################################################################
-# Return a instance of class Flavors with all flavors
+# Return a list withi with all flavors
 ##############################################################################
-def get_flavors(os_conn):
+def get_all_flavors_list(os_conn):
     LOG.debug("getting flavors")
 
     flavor_list = []
     for os_flavor in os_conn.compute.flavors():
         flavor_list.append(
             Flavor(
-                os_flavor.id,
-                os_flavor.name,
-                os_flavor.vcpus,
-                os_flavor.ram / 1024,
-                os_flavor.disk,
-                os_flavor.swap,
-                os_flavor.ephemeral,
-                os_flavor.description,
-                os_flavor.is_public,
-                os_flavor.rxtx_factor,
-                os_flavor.extra_specs,
+                flavor_id=os_flavor.id,
+                name=os_flavor.name,
+                vcpus=os_flavor.vcpus,
+                memory=os_flavor.ram / 1024,
+                disk=os_flavor.disk,
+                swap=os_flavor.swap,
+                ephemeral=os_flavor.ephemeral,
+                description=os_flavor.description,
+                is_public=os_flavor.is_public,
+                rxtx_factor=os_flavor.rxtx_factor,
+                extra_specs=os_flavor.extra_specs,
             )
         )
-    return Flavors(all_flavor_list=flavor_list)
+    return flavor_list
 
 
 # vim: ts=4
