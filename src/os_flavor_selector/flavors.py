@@ -79,10 +79,10 @@ class Flavors:
 ##############################################################################
 # Return an openstack connection
 ##############################################################################
-def get_openstack_connection(args):
+def get_openstack_connection(os_cloud):
     # disable openstacksdk logs
     openstack.enable_logging(debug=False)
-    return openstack.connect(options=args)
+    return openstack.connect(cloud=os_cloud)
 
 
 ##############################################################################

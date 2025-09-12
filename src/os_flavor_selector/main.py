@@ -39,6 +39,16 @@ def cli_args():
         "-d", "--debug", action="store_true", dest="debug", help="debug flag"
     )
     parser.add_argument(
+        "--os-cloud",
+        help=(
+            "Name of the cloud to load from clouds.yaml. "
+            "(Default '%(default)s', which uses OS_* env vars)"
+        ),
+        type=str,
+        default="envvars",
+        required=False,
+    )
+    parser.add_argument(
         "--output",
         default="interactive",
         choices=["interactive", "text", "json"],
@@ -50,7 +60,7 @@ def cli_args():
     parser.add_argument("--vcpus-max", type=int, help="Maximum Amount of VCPUs")
     parser.add_argument("--name", help="Filter by name")
 
-    return parser
+    return parser.parse_args()
 
 
 #############################################################################
@@ -176,27 +186,25 @@ def interactive(flavors):
 def main():
 
     args = cli_args()
-    os_conn = get_openstack_connection(args)
 
-    # parser arguments
-    args_parsed = args.parse_args()
     # enable debug
-    if not args_parsed.debug:
+    if not args.debug:
         logging.disable()
 
+    os_conn = get_openstack_connection(args.os_cloud)
     flavors = get_flavors(os_conn)
 
     # Configure flavors with cli filter parameters
-    flavors.vcpus_min = args_parsed.vcpus_min
-    flavors.vcpus_max = args_parsed.vcpus_max
-    flavors.mem_min = args_parsed.memory_min
-    flavors.mem_max = args_parsed.memory_max
-    flavors.filter_name = args_parsed.name
+    flavors.vcpus_min = args.vcpus_min
+    flavors.vcpus_max = args.vcpus_max
+    flavors.mem_min = args.memory_min
+    flavors.mem_max = args.memory_max
+    flavors.filter_name = args.name
 
-    if args_parsed.output == "json":
+    if args.output == "json":
         list_of_dicts = [asdict(f) for f in flavors.list_flavors]
         print(json.dumps(list_of_dicts))
-    elif args_parsed.output == "text":
+    elif args.output == "text":
         for flavor in flavors.list_flavors:
             print(asdict(flavor))
     else:
