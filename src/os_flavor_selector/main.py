@@ -112,8 +112,9 @@ def create_table(*, flavors, long, sort_column, sort_order):
     table = Table(title="OpenStack Flavors", show_edge=False)
 
     table_cols = RICH_TABLE_COLUMNS_BASIC
+    table_cols = RICH_TABLE_COLUMNS_BASIC[:]
     if long:
-        table_cols = RICH_TABLE_COLUMNS_BASIC + RICH_TABLE_COLUMNS_EXTRA
+        table_cols.extend(RICH_TABLE_COLUMNS_EXTRA)
 
     for col in table_cols:
         table.add_column(
@@ -167,9 +168,8 @@ def handle_filter_prompt(flavors):
 #############################################################################
 def interactive(flavors):
     sort_column_map = {"1": "name", "2": "vcpus", "3": "memory"}
-    sort_by_column = "1"
     sort_order_map = {"asc": False, "desc": True}
-    sort_order = "asc"
+    table_state = {"long": False, "sort_order": "asc", "sort_column": "name"}
 
     console = Console()
     long = False
@@ -180,9 +180,9 @@ def interactive(flavors):
 
         table = create_table(
             flavors=flavors,
-            long=long,
-            sort_column=sort_column_map[sort_by_column],
-            sort_order=sort_order_map[sort_order],
+            long=table_state["long"],
+            sort_column=table_state["sort_column"],
+            sort_order=sort_order_map[table_state["sort_order"]],
         )
 
         console.print(table, justify="center")
@@ -192,8 +192,8 @@ def interactive(flavors):
             f"VCPUs:[bold magenta]{flavors.vcpus_min}-{flavors.vcpus_max}[/]/"
             f"Mem:[bold magenta]{flavors.mem_min}-{flavors.mem_max}[/]/"
             f"Visibility:[bold magenta]{flavors.visibility}[/])  "
-            f"[red]Sorting by:[bold magenta]{sort_column_map[sort_by_column]}[/]  "
-            f"[red]Sort order:[bold magenta]{sort_order}[/]  "
+            f"[red]Sorting by:[bold magenta]{table_state['sort_column']}[/]  "
+            f"[red]Sort order:[bold magenta]{table_state['sort_order']}[/]  "
             f"[red]Show all details:[bold magenta]{long}[/]",
             align="center",
         )
@@ -214,11 +214,13 @@ def interactive(flavors):
         if user_option == "f":
             handle_filter_prompt(flavors)
         elif user_option == "o":
-            sort_order = "asc" if sort_order == "desc" else "desc"
+            table_state["sort_order"] = (
+                "desc" if table_state["sort_order"] == "asc" else "asc"
+            )
         elif user_option == "d":
-            long = not long
+            table_state["long"] = not table_state["long"]
         else:
-            sort_by_column = user_option
+            table_state["sort_column"] = sort_column_map[user_option]
 
 
 ##############################################################################
