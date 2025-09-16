@@ -1,11 +1,31 @@
+[project]
+name = "os-flavor-selector"
+description = "A tool to filter OpenStack flavors based on resource criteria"
+readme = "README.md"
+license = {file = "LICENSE"}
+dynamic = ["version", "dependencies"]
+requires-python = ">=3.7"
+authors = [
+    {name = "Thobias Salazar Trevisan"},
+]
+
+[project.scripts]
+os-flavor-selector = "os_flavor_selector.main:main"
+
+[project.urls]
+"Homepage" = "https://github.com/thobiast/openstack-flavor-selector"
+"Source" = "https://github.com/thobiast/openstack-flavor-selector"
+
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "os_flavor_selector.__version__"}
+dependencies = {file = ["requirements.txt"]}
 
 [tool.black]
 line-length = 88
 
-[tool.pytest.ini_options]
-pythonpath = [
-  "src",
-]
+[tool.pylint]
+max-line-length = 88
