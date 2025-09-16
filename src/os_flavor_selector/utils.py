@@ -3,6 +3,7 @@
 
 
 import logging
+import re
 import sys
 
 
@@ -21,6 +22,15 @@ def setup_logging(log_level):
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
     root_logger.addHandler(handler)
+
+
+def is_valid_regex(pattern):
+    """Returns True if the pattern is a valid regex, False otherwise."""
+    try:
+        re.compile(pattern)
+        return True
+    except re.error:
+        return False
 
 
 # vim: ts=4
